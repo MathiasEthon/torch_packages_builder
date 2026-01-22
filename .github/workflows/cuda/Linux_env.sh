@@ -15,5 +15,9 @@ declare -A CUDA_ARCHS=(
 if [[ ${TORCH_VERSION:0:3} == "2.7" ]]; then
   CUDA_ARCHS["cu128"]="7.5;8.0;8.6;9.0;10.0;12.0+PTX"
 fi
+if [[ ${TORCH_VERSION:0:4} == "2.10" ]]; then
+  CUDA_ARCHS["cu128"]="7.5;8.0;8.6;9.0;10.0;12.0+PTX"
+  CUDA_ARCHS["cu129"]="7.5;8.0;8.6;9.0;10.0;12.0+PTX"
+fi
 export TORCH_CUDA_ARCH_LIST=${CUDA_ARCHS[$CUDA_VERSION]}
 export FORCE_CUDA=1

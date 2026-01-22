@@ -45,3 +45,12 @@ if [[ $REPO == "Dao-AILab/flash-attention" ]]; then
 
   patch -p0 < "$SCRIPT_DIR"/package_specific/flash_attention.patch
 fi
+
+if [[ $REPO == "open-mmlab/mmcv" ]]; then
+  pip install addict yapf
+  echo "MMCV_WITH_OPS=1" >> "$GITHUB_ENV"
+  echo "FORCE_CUDA=1" >> "$GITHUB_ENV"
+  if [[ $COMPUTE_PLATFORM != "cpu" ]]; then
+    source "$SCRIPT_DIR"/.github/workflows/cuda/${OS}_env.sh
+  fi
+fi
