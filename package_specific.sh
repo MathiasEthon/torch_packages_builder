@@ -47,7 +47,8 @@ if [[ $REPO == "Dao-AILab/flash-attention" ]]; then
 fi
 
 if [[ $REPO == "open-mmlab/mmcv" ]]; then
-  pip install addict yapf
+  # mmcv's setup.py imports pkg_resources, which setuptools 81 removed.
+  pip install addict yapf "setuptools<81"
   echo "MMCV_WITH_OPS=1" >> "$GITHUB_ENV"
   if [[ $COMPUTE_PLATFORM != "cpu" ]]; then
     echo "FORCE_CUDA=1" >> "$GITHUB_ENV"
