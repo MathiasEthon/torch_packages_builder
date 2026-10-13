@@ -11,14 +11,18 @@ if [[ $REPO == "facebookresearch/pytorch3d" ]]; then
     curl -L https://github.com/NVIDIA/cub/archive/${CUB_VERSION}.tar.gz | tar -xzf - --strip-components=1 --directory cub
     echo "CUB_HOME=$PWD/cub" >> "$GITHUB_ENV"
   fi
-  if [[ $OS == "Linux" ]] && [[ $COMPUTE_PLATFORM == "cu130" ]]; then
-    echo "NVCC_FLAGS=-static-global-template-stub=false" >> "$GITHUB_ENV"
-  fi
 fi
 
 if [[ $REPO == "facebookresearch/fairseq" ]]; then
   pip install cython
   patch -p0 < "$SCRIPT_DIR"/package_specific/fairseq_cub.patch
+
+  # Fix 'std': ambiguous symbol error in compiled_autograd.h when compiling CUDA extensions on Windows
+  # https://github.com/pytorch/pytorch/issues/173232
+  if [[ $OS == "Windows" ]] && [[ $COMPUTE_PLATFORM != "cpu" ]]; then
+    COMPILED_AUTOGRAD="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')/include/torch/csrc/dynamo/compiled_autograd.h"
+    sed -i 's/#if defined(_WIN32) && (defined(USE_CUDA) || defined(USE_ROCM))/#if defined(_WIN32) \&\& defined(__NVCC__)/' "$COMPILED_AUTOGRAD"
+  fi
 fi
 
 if [[ $REPO == "NVlabs/tiny-cuda-nn" ]]; then
@@ -26,7 +30,41 @@ if [[ $REPO == "NVlabs/tiny-cuda-nn" ]]; then
   echo "LIBRARY_PATH=/usr/local/cuda/lib64/stubs" >> "$GITHUB_ENV"
   echo "TCNN_CUDA_ARCHITECTURES=${TORCH_CUDA_ARCH_LIST}" | sed "s/\(\.\|\+PTX\)//g" >> "$GITHUB_ENV"
 
-  patch -p0 < "$SCRIPT_DIR"/package_specific/tiny_cuda_nn.patch
+  SETUPTOOLS_VERSION=$(pip show setuptools | grep '^Version:' | awk '{print $2}')
+  if python -c "from packaging.version import Version; exit(0 if Version('$SETUPTOOLS_VERSION') >= Version('82') else 1)"; then
+    pip install 'setuptools<82'
+  fi
+
+  patch -p0 < "$SCRIPT_DIR"/package_specific/tiny_cuda_nn_cpp17.patch
+
+  if [[ $OS == "Windows" ]] && python -c "from packaging.version import Version; exit(0 if Version('$TORCH_VERSION') >= Version('2.13') else 1)"; then
+    patch -p0 < "$SCRIPT_DIR"/package_specific/tiny_cuda_nn_win_cpp20.patch
+  fi
+fi
+
+if [[ $REPO == "open-mmlab/mmcv" ]]; then
+  pip install addict yapf
+  SETUPTOOLS_VERSION=$(pip show setuptools | grep '^Version:' | awk '{print $2}')
+  if python -c "from packaging.version import Version; exit(0 if Version('$SETUPTOOLS_VERSION') >= Version('82') else 1)"; then
+    pip install 'setuptools<82'
+  fi
+
+  # Fix 'std': ambiguous symbol error in compiled_autograd.h when compiling CUDA extensions on Windows
+  # https://github.com/pytorch/pytorch/issues/173232
+  if [[ $OS == "Windows" ]] && [[ $COMPUTE_PLATFORM != "cpu" ]]; then
+    COMPILED_AUTOGRAD="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')/include/torch/csrc/dynamo/compiled_autograd.h"
+    sed -i 's/#if defined(_WIN32) && (defined(USE_CUDA) || defined(USE_ROCM))/#if defined(_WIN32) \&\& defined(__NVCC__)/' "$COMPILED_AUTOGRAD"
+  fi
+
+  echo "MMCV_WITH_OPS=1" >> "$GITHUB_ENV"
+
+  if python -c "import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)"; then
+    patch -p0 < "$SCRIPT_DIR"/package_specific/mmcv_py313plus.patch
+  fi
+
+  if [[ $OS == "Windows" ]] && python -c "from packaging.version import Version; exit(0 if Version('$TORCH_VERSION') >= Version('2.13') else 1)"; then
+    patch -p0 < "$SCRIPT_DIR"/package_specific/mmcv_win_cpp20.patch
+  fi
 fi
 
 if [[ $REPO == "Dao-AILab/flash-attention" ]]; then
@@ -44,14 +82,4 @@ if [[ $REPO == "Dao-AILab/flash-attention" ]]; then
   fi
 
   patch -p0 < "$SCRIPT_DIR"/package_specific/flash_attention.patch
-fi
-
-if [[ $REPO == "open-mmlab/mmcv" ]]; then
-  # mmcv's setup.py imports pkg_resources, which setuptools 81 removed.
-  pip install addict yapf "setuptools<81"
-  echo "MMCV_WITH_OPS=1" >> "$GITHUB_ENV"
-  if [[ $COMPUTE_PLATFORM != "cpu" ]]; then
-    echo "FORCE_CUDA=1" >> "$GITHUB_ENV"
-    source "$SCRIPT_DIR"/.github/workflows/cuda/${OS}_env.sh
-  fi
 fi

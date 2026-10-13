@@ -26,25 +26,25 @@ TORCH_RELEASES = {
     "2.7.1": TorchRelease(("3.9", "3.10", "3.11", "3.12", "3.13"), ("cpu", "cu118", "cu126", "cu128", "rocm6.3")),
     "2.8.0": TorchRelease(("3.9", "3.10", "3.11", "3.12", "3.13"), ("cpu", "cu126", "cu128", "cu129", "rocm6.4")),
     "2.9.0": TorchRelease(
-        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"),
-        ("cpu", "cu126", "cu128", "cu130", "rocm6.4"),
+        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"), ("cpu", "cu126", "cu128", "cu130", "rocm6.4")
     ),
     "2.9.1": TorchRelease(
-        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"),
-        ("cpu", "cu126", "cu128", "cu130", "rocm6.4"),
+        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"), ("cpu", "cu126", "cu128", "cu130", "rocm6.4")
     ),
     "2.10.0": TorchRelease(
-        ("3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t"),
-        ("cpu", "cu126", "cu128", "cu129", "cu130", "rocm7.0", "rocm7.1"),
+        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"), ("cpu", "cu126", "cu128", "cu130", "rocm7.1")
     ),
-    "2.12.1": TorchRelease(
-        ("3.10", "3.11", "3.12", "3.13", "3.14"),
-        ("cpu", "cu126", "cu129", "cu130"),
+    "2.11.0": TorchRelease(
+        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"), ("cpu", "cu126", "cu128", "cu130", "rocm7.2")
     ),
-    "2.14.1": TorchRelease(
-        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.15"),
-        ("cpu", "cu126", "cu130"),
+    "2.12.0": TorchRelease(
+        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"), ("cpu", "cu126", "cu130", "cu132", "rocm7.2")
     ),
+    "2.13.0": TorchRelease(
+        ("3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"), ("cpu", "cu126", "cu130", "cu132", "rocm7.2")
+    ),
+    "2.12.1": TorchRelease(("3.10", "3.11", "3.12", "3.13", "3.14"), ("cpu", "cu126", "cu129", "cu130", "cu132")),
+    "2.14.1": TorchRelease(("3.10", "3.11", "3.12", "3.13", "3.14", "3.15"), ("cpu", "cu126", "cu130", "cu132")),
 }
 
 
@@ -72,9 +72,7 @@ def main():
     jobs = []
     for torch_version in torch_versions:
         for os_name, python_version, compute_platform in product(
-            oses_names,
-            TORCH_RELEASES[torch_version].python_versions,
-            TORCH_RELEASES[torch_version].compute_platforms,
+            oses_names, TORCH_RELEASES[torch_version].python_versions, TORCH_RELEASES[torch_version].compute_platforms
         ):
             if os_name == MACOS_ARM64 and compute_platform != "cpu":
                 continue
